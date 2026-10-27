@@ -19,7 +19,7 @@ def get_db():
         g.db = mysql.connector.connect(
             host=os.getenv("MYSQL_HOST", "localhost"),
             user=os.getenv("MYSQL_USER", "root"),
-            password=password,
+            password=475869,
             database=os.getenv("MYSQL_DATABASE", "emp"),
         )
     return g.db
