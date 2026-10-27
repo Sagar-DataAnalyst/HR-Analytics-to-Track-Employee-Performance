@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f6fb">
+  <title>PeopleDesk · Employee management</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="{{ url_for('index') }}" aria-label="PeopleDesk home">
+        <span class="brand-mark">P</span>
+        <span>People<span class="brand-accent">Desk</span></span>
+      </a>
+      <span class="top-note"><span class="status-dot"></span> HR analytics workspace</span>
+    </header>
+
+    <section class="page-heading">
+      <p class="eyebrow">OVERVIEW</p>
+      <h1>Employee management</h1>
+      <p class="subtitle">Manage your team, employee records, and compensation.</p>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="notices" aria-live="polite">
+          {% for category, message in messages %}
+            <div class="notice notice-{{ category }}">
+              <span class="notice-icon">{% if category == "success" %}✓{% elif category == "warning" %}!{% else %}×{% endif %}</span>
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <section class="stats" aria-label="Employee summary">
+      <article class="stat-card">
+        <div><p class="stat-label">EMPLOYEES IN VIEW</p><p class="stat-value">{{ employee_count }}</p></div>
+        <span class="stat-icon icon-blue" aria-hidden="true">♙</span>
+      </article>
+      <article class="stat-card">
+        <div><p class="stat-label">PAYROLL IN VIEW</p><p class="stat-value">{{ "{:,.2f}".format(total_payroll) }}</p></div>
+        <span class="stat-icon icon-green" aria-hidden="true">¤</span>
+      </article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div><p class="eyebrow">NEW RECORD</p><h2>Add an employee</h2></div>
+        <span class="heading-mark" aria-hidden="true">＋</span>
+      </div>
+      <form class="employee-form" method="post" action="{{ url_for('add_employee') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field"><label for="employee_id">Employee ID</label><input id="employee_id" name="employee_id" maxlength="20" placeholder="e.g. EMP-104" required></div>
+        <div class="field"><label for="name">Full name</label><input id="name" name="name" maxlength="100" placeholder="Employee name" required></div>
+        <div class="field"><label for="position">Position</label><input id="position" name="position" maxlength="100" placeholder="Job title" required></div>
+        <div class="field"><label for="salary">Salary</label><input id="salary" name="salary" type="number" min="0" max="99999999.99" step="0.01" placeholder="0.00" required></div>
+        <button class="button button-primary add-button" type="submit"><span aria-hidden="true">＋</span> Add employee</button>
+      </form>
+    </section>
+
+    <section class="panel directory-panel">
+      <div class="directory-heading">
+        <div><p class="eyebrow">YOUR TEAM</p><h2>Employee directory</h2></div>
+        <form class="search-form" method="get" action="{{ url_for('index') }}">
+          <label class="sr-only" for="employee-search">Search employees</label>
+          <span class="search-icon" aria-hidden="true">⌕</span>
+          <input id="employee-search" type="search" name="q" value="{{ search }}" placeholder="Search by name, ID, or role">
+          {% if search %}<a class="clear-search" href="{{ url_for('index') }}" aria-label="Clear search">×</a>{% endif %}
+        </form>
+      </div>
+
+      {% if employees %}
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>EMPLOYEE</th><th>POSITION</th><th>SALARY</th><th class="actions-heading">ACTIONS</th></tr></thead>
+            <tbody>
+              {% for employee in employees %}
+                <tr>
+                  <td><div class="employee-cell"><span class="avatar">{{ employee[1][:1]|upper }}</span><span><strong>{{ employee[1] }}</strong><small>{{ employee[0] }}</small></span></div></td>
+                  <td><span class="position-pill">{{ employee[2] }}</span></td>
+                  <td class="salary">{{ "{:,.2f}".format(employee[3]) }}</td>
+                  <td class="actions-cell">
+                    <form class="promote-form" method="post" action="{{ url_for('promote_employee', employee_id=employee[0]) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <label class="sr-only" for="raise-{{ loop.index }}">Salary increase for {{ employee[1] }}</label>
+                      <input id="raise-{{ loop.index }}" type="number" name="amount" min="0.01" max="99999999.99" step="0.01" placeholder="Increase" required>
+                      <button class="button button-light" type="submit">Promote</button>
+                    </form>
+                    <form method="post" action="{{ url_for('remove_employee', employee_id=employee[0]) }}" onsubmit="return confirm('Remove this employee?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                      <button class="button button-danger" type="submit" aria-label="Remove {{ employee[1] }}">Remove</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <span class="empty-icon" aria-hidden="true">♙</span>
+          <h3>{% if search %}No matching employees{% else %}No employees yet{% endif %}</h3>
+          <p>{% if search %}Try a different search term.{% else %}Add an employee above to get started.{% endif %}</p>
+        </div>
+      {% endif %}
+      <footer class="directory-footer"><span>{{ employee_count }} {{ "employee" if employee_count == 1 else "employees" }} shown</span><span>Employee records</span></footer>
+    </section>
+    <footer class="app-footer">PeopleDesk <span>·</span> Local HR workspace</footer>
+  </main>
+</body>
+</html>
